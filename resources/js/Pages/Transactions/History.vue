@@ -2,6 +2,7 @@
 import CustomSelect from '@/components/CustomSelect.vue';
 import Pagination from '@/components/Pagination.vue';
 import PullToRefresh from '@/components/PullToRefresh.vue';
+import TransactionDetailsModal from '@/components/TransactionDetailsModal.vue';
 import TransactionSkeleton from '@/components/TransactionSkeleton.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
@@ -57,6 +58,43 @@ const showExportMenu = ref(false);
 const showFilterSheet = ref(false);
 const filterBar = ref(null);
 const isLoading = ref(true);
+const showDetailsModal = ref(false);
+const selectedTransaction = ref(null);
+const showSummary = ref(false);
+
+// Summary stats computed
+const summaryStats = computed(() => {
+    const transactions = props.transactions.data || [];
+
+    const totalFees = transactions
+        .filter((t) => t.type === 'cash_in' || t.type === 'cash_out')
+        .reduce((sum, t) => sum + (t.fee || 0), 0);
+
+    const totalCashIn = transactions
+        .filter((t) => t.type === 'cash_in')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalCashOut = transactions
+        .filter((t) => t.type === 'cash_out')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalAdjustments = transactions.filter(
+        (t) => t.type === 'adjustment',
+    ).length;
+
+    const totalCapitalMoves = transactions.filter(
+        (t) => t.type === 'capital_move',
+    ).length;
+
+    return {
+        totalFees,
+        totalCashIn,
+        totalCashOut,
+        totalAdjustments,
+        totalCapitalMoves,
+        totalTransactions: transactions.length,
+    };
+});
 
 // Temp filter values for bottom sheet
 const tempFilters = ref({
@@ -296,6 +334,11 @@ const getTypeBadge = (type) => {
 const getTypeLabel = (type) => {
     return type.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 };
+
+const openTransactionDetails = (transaction) => {
+    selectedTransaction.value = transaction;
+    showDetailsModal.value = true;
+};
 </script>
 
 <template>
@@ -314,9 +357,37 @@ const getTypeLabel = (type) => {
                         <input
                             v-model="form.search"
                             @input="apply"
-                            placeholder="Search remarks..."
+                            placeholder="Search reference..."
                             class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
+
+                        <!-- Summary Button -->
+                        <button
+                            @click="showSummary = !showSummary"
+                            class="flex items-center justify-center rounded-lg border border-gray-300 p-2 hover:bg-gray-50"
+                            :class="{
+                                'border-indigo-500 bg-indigo-50': showSummary,
+                            }"
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                :class="
+                                    showSummary
+                                        ? 'text-indigo-600'
+                                        : 'text-gray-600'
+                                "
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                />
+                            </svg>
+                        </button>
 
                         <!-- Filter Button -->
                         <button
@@ -655,13 +726,39 @@ const getTypeLabel = (type) => {
                             <input
                                 v-model="form.search"
                                 @input="apply"
-                                placeholder="Search remarks..."
+                                placeholder="Search reference..."
                                 class="w-64 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
                         </div>
 
-                        <!-- Export Buttons (Desktop) -->
+                        <!-- Summary + Export Buttons (Desktop) -->
                         <div class="flex gap-2">
+                            <!-- Summary Button -->
+                            <button
+                                @click="showSummary = !showSummary"
+                                class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+                                :class="
+                                    showSummary
+                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
+                                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                                "
+                            >
+                                <svg
+                                    class="h-4 w-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                    />
+                                </svg>
+                                Summary
+                            </button>
+
                             <a
                                 :href="route('exports.transactions', form)"
                                 class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
@@ -692,10 +789,11 @@ const getTypeLabel = (type) => {
                 <div v-else>
                     <!-- Mobile: Card Layout -->
                     <div class="space-y-3 lg:hidden">
-                        <div
+                        <button
                             v-for="t in transactions.data"
                             :key="t.id"
-                            class="rounded-lg bg-white p-4 shadow"
+                            @click="openTransactionDetails(t)"
+                            class="w-full rounded-lg bg-white p-4 text-left shadow transition-all hover:shadow-lg hover:ring-2 hover:ring-indigo-500"
                         >
                             <div class="flex items-start justify-between">
                                 <div class="flex-1">
@@ -721,6 +819,10 @@ const getTypeLabel = (type) => {
                                             {{ formatMoney(t.amount) }}
                                         </p>
                                         <p
+                                            v-if="
+                                                t.type === 'cash_in' ||
+                                                t.type === 'cash_out'
+                                            "
                                             class="text-sm font-medium text-green-600"
                                         >
                                             Fee: {{ formatMoney(t.fee ?? 0) }}
@@ -728,10 +830,10 @@ const getTypeLabel = (type) => {
                                     </div>
 
                                     <p
-                                        v-if="t.remarks"
+                                        v-if="t.reference"
                                         class="mt-1 text-sm text-gray-600"
                                     >
-                                        {{ t.remarks }}
+                                        {{ t.reference }}
                                     </p>
 
                                     <p class="mt-2 text-xs text-gray-400">
@@ -743,7 +845,7 @@ const getTypeLabel = (type) => {
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                        </button>
 
                         <div
                             v-if="!transactions.data.length"
@@ -788,7 +890,7 @@ const getTypeLabel = (type) => {
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                                     >
-                                        Remarks
+                                        Reference
                                     </th>
                                 </tr>
                             </thead>
@@ -797,7 +899,8 @@ const getTypeLabel = (type) => {
                                 <tr
                                     v-for="t in transactions.data"
                                     :key="t.id"
-                                    class="transition-colors hover:bg-gray-50"
+                                    @click="openTransactionDetails(t)"
+                                    class="cursor-pointer transition-colors hover:bg-indigo-50"
                                 >
                                     <td
                                         class="whitespace-nowrap px-6 py-4 text-sm text-gray-900"
@@ -834,10 +937,20 @@ const getTypeLabel = (type) => {
                                     <td
                                         class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium text-green-600"
                                     >
-                                        {{ formatMoney(t.fee ?? 0) }}
+                                        <span
+                                            v-if="
+                                                t.type === 'cash_in' ||
+                                                t.type === 'cash_out'
+                                            "
+                                        >
+                                            {{ formatMoney(t.fee ?? 0) }}
+                                        </span>
+                                        <span v-else class="text-gray-400"
+                                            >Free</span
+                                        >
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-600">
-                                        {{ t.remarks ?? '-' }}
+                                        {{ t.reference ?? '-' }}
                                     </td>
                                 </tr>
 
@@ -1008,5 +1121,171 @@ const getTypeLabel = (type) => {
                 </transition>
             </teleport>
         </PullToRefresh>
+
+        <!-- Transaction Details Modal -->
+        <TransactionDetailsModal
+            :show="showDetailsModal"
+            :transaction="selectedTransaction || {}"
+            :gcashAccounts="gcashAccounts"
+            @close="showDetailsModal = false"
+        />
+
+        <!-- Summary Stats Slide-down Panel -->
+        <teleport to="body">
+            <transition
+                enter-active-class="transition ease-out duration-300"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition ease-in duration-200"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="showSummary"
+                    @click="showSummary = false"
+                    class="fixed inset-0 z-30 bg-black bg-opacity-50"
+                ></div>
+            </transition>
+
+            <transition
+                enter-active-class="transition ease-out duration-300"
+                enter-from-class="-translate-y-full"
+                enter-to-class="translate-y-0"
+                leave-active-class="transition ease-in duration-200"
+                leave-from-class="translate-y-0"
+                leave-to-class="-translate-y-full"
+            >
+                <div
+                    v-if="showSummary"
+                    class="fixed left-0 right-0 top-0 z-40 mx-auto max-w-2xl rounded-b-2xl bg-white shadow-2xl"
+                >
+                    <!-- Header -->
+                    <div class="border-b border-gray-200 px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                📊 Earnings Summary
+                            </h3>
+                            <button
+                                @click="showSummary = false"
+                                class="rounded-lg p-1 hover:bg-gray-100"
+                            >
+                                <svg
+                                    class="h-5 w-5 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-500">
+                            {{ dateLabel }}
+                        </p>
+                    </div>
+
+                    <!-- Stats Content -->
+                    <div class="p-6">
+                        <!-- Main Stat: Total Fees -->
+                        <div
+                            class="mb-6 rounded-lg bg-gradient-to-r from-green-500 to-green-600 p-6 text-white"
+                        >
+                            <p class="text-sm font-medium opacity-90">
+                                Total Fees Collected
+                            </p>
+                            <p class="mt-2 text-3xl font-bold">
+                                ₱{{
+                                    summaryStats.totalFees.toLocaleString(
+                                        undefined,
+                                        {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        },
+                                    )
+                                }}
+                            </p>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                            <!-- Total Transactions -->
+                            <div
+                                class="rounded-lg border border-gray-200 bg-gray-50 p-4"
+                            >
+                                <p class="text-xs font-medium text-gray-500">
+                                    Transactions
+                                </p>
+                                <p
+                                    class="mt-1 text-2xl font-bold text-gray-900"
+                                >
+                                    {{ summaryStats.totalTransactions }}
+                                </p>
+                            </div>
+
+                            <!-- Total Cash In -->
+                            <div
+                                class="rounded-lg border border-blue-200 bg-blue-50 p-4"
+                            >
+                                <p class="text-xs font-medium text-blue-600">
+                                    Cash In
+                                </p>
+                                <p class="mt-1 text-lg font-bold text-blue-900">
+                                    ₱{{
+                                        summaryStats.totalCashIn.toLocaleString()
+                                    }}
+                                </p>
+                            </div>
+
+                            <!-- Total Cash Out -->
+                            <div
+                                class="rounded-lg border border-red-200 bg-red-50 p-4"
+                            >
+                                <p class="text-xs font-medium text-red-600">
+                                    Cash Out
+                                </p>
+                                <p class="mt-1 text-lg font-bold text-red-900">
+                                    ₱{{
+                                        summaryStats.totalCashOut.toLocaleString()
+                                    }}
+                                </p>
+                            </div>
+
+                            <!-- Adjustments -->
+                            <div
+                                class="rounded-lg border border-yellow-200 bg-yellow-50 p-4"
+                            >
+                                <p class="text-xs font-medium text-yellow-600">
+                                    Adjustments
+                                </p>
+                                <p
+                                    class="mt-1 text-2xl font-bold text-yellow-900"
+                                >
+                                    {{ summaryStats.totalAdjustments }}
+                                </p>
+                            </div>
+
+                            <!-- Capital Moves -->
+                            <div
+                                class="rounded-lg border border-purple-200 bg-purple-50 p-4"
+                            >
+                                <p class="text-xs font-medium text-purple-600">
+                                    Capital Moves
+                                </p>
+                                <p
+                                    class="mt-1 text-2xl font-bold text-purple-900"
+                                >
+                                    {{ summaryStats.totalCapitalMoves }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+        </teleport>
     </AuthenticatedLayout>
 </template>

@@ -64,6 +64,7 @@ class TransactionController extends Controller
                 'from_account_id' => is_numeric($data['from']) ? $data['from'] : null,
                 'to_account_id' => is_numeric($data['to']) ? $data['to'] : null,
                 'amount' => $data['amount'],
+                'reference' => $data['reference'] ?? null,
                 'remarks' => $data['remarks'] ?? null,
             ]),
         };
@@ -104,7 +105,7 @@ class TransactionController extends Controller
     public function history(Request $request)
     {
         $query = Transaction::query()
-            ->with('gcashAccount')
+            ->with(['gcashAccount', 'fromAccount', 'toAccount'])
             ->latest();
 
         // Filter by type

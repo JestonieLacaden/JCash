@@ -121,6 +121,22 @@ const user = page.props.auth.user;
             </div>
 
             <DeleteUser />
+
+            <!-- Logout Section -->
+            <div class="space-y-6">
+                <HeadingSmall
+                    title="Logout"
+                    description="Sign out of your account"
+                />
+                <Link
+                    :href="route('logout')"
+                    method="post"
+                    as="button"
+                    class="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                >
+                    Logout
+                </Link>
+            </div>
         </SettingsLayout>
     </AppLayout>
 </template>

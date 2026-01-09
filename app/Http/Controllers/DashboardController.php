@@ -33,6 +33,7 @@ class DashboardController extends Controller
                 'totalCapital' => $totalCapital,
                 'tuboToday' => $tuboToday,
             ],
+            'gcashAccounts' => GcashAccount::orderBy('name')->get(),
         ]);
     }
 }

@@ -23,7 +23,7 @@ class TransactionService
         } else {
             $perThousand = floor($amount / 1000);
             $rate = $discounted
-                ? $settings->discount_per_1000_fee
+                ? $settings->discounted_per_1000_fee
                 : $settings->per_1000_fee;
 
             $fee = $perThousand * $rate;
@@ -39,6 +39,9 @@ class TransactionService
             $gcash = GcashAccount::findOrFail($data['gcash_account_id']);
             $wallet = CashWallet::firstOrFail();
 
+            // Store previous balance
+            $previousBalance = $gcash->balance;
+
             // CASH IN = you SEND money
             $gcash->decrement('balance', $data['amount']);
             $wallet->increment('balance', $data['amount']);
@@ -52,6 +55,7 @@ class TransactionService
                 'type' => 'cash_in',
                 'gcash_account_id' => $gcash->id,
                 'amount' => $data['amount'],
+                'previous_balance' => $previousBalance,
                 'fee' => $fee,
                 'discounted' => $data['discounted'] ?? false,
                 'remarks' => $data['remarks'] ?? null,
@@ -71,6 +75,9 @@ class TransactionService
             $gcash = GcashAccount::findOrFail($data['gcash_account_id']);
             $wallet = CashWallet::firstOrFail();
 
+            // Store previous balance
+            $previousBalance = $gcash->balance;
+
             // CASH OUT = you RECEIVE money
             $gcash->increment('balance', $data['amount']);
             $wallet->decrement('balance', $data['amount']);
@@ -84,6 +91,7 @@ class TransactionService
                 'type' => 'cash_out',
                 'gcash_account_id' => $gcash->id,
                 'amount' => $data['amount'],
+                'previous_balance' => $previousBalance,
                 'fee' => $fee,
                 'discounted' => $data['discounted'] ?? false,
                 'remarks' => $data['remarks'] ?? null,
@@ -115,6 +123,7 @@ class TransactionService
                 'from_account_id' => $data['from_account_id'] ?? null,
                 'to_account_id' => $data['to_account_id'] ?? null,
                 'amount' => $data['amount'],
+                'reference' => $data['reference'] ?? null,
                 'remarks' => $data['remarks'] ?? null,
                 'status' => 'claimed',
                 'claimed_at' => Carbon::now(),

@@ -1,14 +1,20 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DashboardSkeleton from '@/components/DashboardSkeleton.vue';
+import GcashAccountsModal from '@/components/GcashAccountsModal.vue';
 import PullToRefresh from '@/components/PullToRefresh.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
+
+const props = defineProps({
+    gcashAccounts: Array,
+});
 
 const page = usePage();
 const stats = computed(() => page.props.stats);
 const showSuccess = ref(false);
 const isLoading = ref(true);
+const showGcashModal = ref(false);
 
 // Watch for flash messages
 watch(
@@ -27,7 +33,7 @@ watch(
 const handleRefresh = () => {
     isLoading.value = true;
     router.reload({
-        only: ['stats'],
+        only: ['stats', 'gcashAccounts'],
         onFinish: () => {
             setTimeout(() => {
                 isLoading.value = false;
@@ -85,15 +91,35 @@ onMounted(() => {
                         <!-- Top Row: Total GCash & Cash on Hand (Same width as bottom cards) -->
                         <div class="mx-auto max-w-2xl">
                             <div class="grid grid-cols-2 gap-4">
-                                <div class="rounded-xl bg-white p-4 shadow">
-                                    <p class="text-xs text-gray-500">
-                                        Total GCash
-                                    </p>
+                                <button
+                                    @click="showGcashModal = true"
+                                    class="rounded-xl bg-white p-4 text-left shadow transition-all hover:shadow-lg hover:ring-2 hover:ring-indigo-500"
+                                >
+                                    <div
+                                        class="flex items-center justify-between"
+                                    >
+                                        <p class="text-xs text-gray-500">
+                                            Total GCash
+                                        </p>
+                                        <svg
+                                            class="h-4 w-4 text-indigo-500"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                            />
+                                        </svg>
+                                    </div>
                                     <p class="text-lg font-semibold">
                                         ₱
                                         {{ stats.totalGcash.toLocaleString() }}
                                     </p>
-                                </div>
+                                </button>
 
                                 <div class="rounded-xl bg-white p-4 shadow">
                                     <p class="text-xs text-gray-500">
@@ -164,5 +190,12 @@ onMounted(() => {
                 </div>
             </div>
         </PullToRefresh>
+
+        <!-- GCash Accounts Modal -->
+        <GcashAccountsModal
+            :show="showGcashModal"
+            :accounts="gcashAccounts"
+            @close="showGcashModal = false"
+        />
     </AuthenticatedLayout>
 </template>
