@@ -1,8 +1,6 @@
 <script setup>
 import Checkbox from '@/Components/Checkbox.vue';
 import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
@@ -37,62 +35,65 @@ const submit = () => {
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit">
+        <form @submit.prevent="submit" class="space-y-3">
+            <!-- Username/Email Input -->
             <div>
-                <InputLabel for="login" value="Username or Email" />
-
                 <TextInput
                     id="login"
                     type="text"
-                    class="mt-1 block w-full"
+                    class="block w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
                     v-model="form.login"
                     required
                     autofocus
                     autocomplete="username"
-                    placeholder="Enter username or email"
+                    placeholder="Mobile number or email address"
                 />
-
                 <InputError class="mt-2" :message="form.errors.login" />
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
+            <!-- Password Input -->
+            <div>
                 <TextInput
                     id="password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="block w-full rounded-lg border border-gray-300 px-4 py-3 text-base"
                     v-model="form.password"
                     required
                     autocomplete="current-password"
+                    placeholder="Password"
                 />
-
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
-            <div class="mt-4 block">
+            <!-- Remember Me Checkbox -->
+            <div class="flex items-center">
                 <label class="flex items-center">
                     <Checkbox name="remember" v-model:checked="form.remember" />
                     <span class="ms-2 text-sm text-gray-600">Remember me</span>
                 </label>
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <Link
-                    v-if="canResetPassword"
-                    :href="route('password.request')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                    Forgot your password?
-                </Link>
-
-                <PrimaryButton
-                    class="ms-4"
+            <!-- Log In Button (Facebook style) -->
+            <div>
+                <button
+                    type="submit"
+                    class="w-full rounded-lg bg-indigo-600 px-4 py-3 text-lg font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
-                    Log in
-                </PrimaryButton>
+                    Log In
+                </button>
+            </div>
+
+            <!-- Forgotten Password Link -->
+            <div class="text-center">
+                <Link
+                    v-if="canResetPassword"
+                    :href="route('password.request')"
+                    class="text-sm text-indigo-600 hover:underline"
+                >
+                    Forgotten password?
+                </Link>
             </div>
         </form>
     </GuestLayout>

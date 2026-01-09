@@ -1,7 +1,6 @@
 <script setup>
-import ApplicationLogo from '@/components/ApplicationLogo.vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 // Get role status
 const { props } = usePage();
@@ -13,6 +12,25 @@ const isAuditor = computed(() => userRole.value === 'auditor');
 
 // Floating menu state
 const showFloatingMenu = ref(false);
+const floatingMenuRef = ref(null);
+
+// Click outside handler
+const handleClickOutside = (event) => {
+    if (
+        floatingMenuRef.value &&
+        !floatingMenuRef.value.contains(event.target)
+    ) {
+        showFloatingMenu.value = false;
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <template>
@@ -25,11 +43,12 @@ const showFloatingMenu = ref(false);
                 <!-- Logo -->
                 <div class="flex items-center gap-2">
                     <Link :href="route('dashboard')">
-                        <ApplicationLogo
-                            class="h-8 w-auto fill-current text-gray-800"
-                        />
+                        <span class="text-lg font-bold"
+                            ><span class="text-indigo-600">J</span>Cash</span
+                        >
                     </Link>
-                    <span class="text-lg font-bold">JCash</span>
+                    <!-- Blank space for future logo replacement -->
+                    <div class="h-8 w-8"></div>
                 </div>
 
                 <!-- User Info with Profile Icon -->
@@ -68,6 +87,7 @@ const showFloatingMenu = ref(false);
         <!-- Floating Menu - Cash In/Out (Home only) -->
         <div
             v-if="(isAdmin || isStaff) && route().current('dashboard')"
+            ref="floatingMenuRef"
             class="fixed bottom-20 right-4 z-20 md:bottom-6"
         >
             <!-- Action Buttons (appear above + button) -->

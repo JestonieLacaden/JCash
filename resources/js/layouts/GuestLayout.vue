@@ -1,21 +1,23 @@
 <script setup>
-import ApplicationLogo from '@/components/ApplicationLogo.vue';
 import { Link } from '@inertiajs/vue3';
 </script>
 
 <template>
     <div
-        class="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0"
+        class="flex min-h-screen flex-col items-center justify-center bg-gray-100"
     >
-        <div>
+        <!-- Logo centered at top -->
+        <div class="mb-8">
             <Link href="/">
-                <ApplicationLogo class="h-20 w-20 fill-current text-gray-500" />
+                <div class="text-5xl font-bold">
+                    <span class="text-indigo-600">J</span
+                    ><span class="text-gray-800">Cash</span>
+                </div>
             </Link>
         </div>
 
-        <div
-            class="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-lg sm:rounded-lg"
-        >
+        <!-- Form content without background -->
+        <div class="w-full max-w-md px-6">
             <slot />
         </div>
     </div>
